@@ -518,6 +518,8 @@ void SampleApp::renderFrame()
     if (mpSwapchain)
     {
         int imageIndex = mpSwapchain->acquireNextImage();
+        if (imageIndex < 0)
+            return;
         FALCOR_ASSERT(imageIndex >= 0 && imageIndex < (int)mpSwapchain->getDesc().imageCount);
         const Texture* pSwapchainImage = mpSwapchain->getImage(imageIndex).get();
         pRenderContext->copyResource(pSwapchainImage, mpTargetFBO->getColorTexture(0).get());
