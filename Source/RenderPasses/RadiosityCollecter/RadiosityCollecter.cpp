@@ -38,12 +38,22 @@ namespace
 const std::string kInputPosition = "posW";
 const std::string kInputAccumulatedColor = "accumulatedColor";
 
+const std::string kOutputPosition = "posW";
+const std::string kOutputAccumulatedColor = "accumulatedColor";
+
 } // namespace
 
 const Falcor::ChannelList kInputChannels = {
     // clang-format off
     {kInputPosition        , "gPosW"            , "Position in world space", true, ResourceFormat::RGBA32Float},
     {kInputAccumulatedColor, "gAccumulatedColor", "Accumulated color"      , true, ResourceFormat::RGBA32Float}
+    // clang-format on
+};
+
+const Falcor::ChannelList kOutputChannels = {
+    // clang-format off
+    {kOutputPosition        , "gPosW"            , "Position in world space", true, ResourceFormat::RGBA32Float},
+    {kOutputAccumulatedColor, "gAccumulatedColor", "Accumulated color"      , true, ResourceFormat::RGBA32Float}
     // clang-format on
 };
 
@@ -56,13 +66,19 @@ RadiosityCollecter::RadiosityCollecter(ref<Device> pDevice, const Properties& pr
 {
     const char* envOutputDir = std::getenv("RadiosityCollecterOutputDir");
     mOutputDirectory = envOutputDir ? envOutputDir : "RadiosityCollecterOutput";
+    if (!std::filesystem::exists(mOutputDirectory))
+    {
+        std::filesystem::create_directories(mOutputDirectory);
+    }
 
     cameraInfoCSVFileLocation = std::filesystem::path(mOutputDirectory) / "camera.csv";
     cameraInfoCSVFile.open(cameraInfoCSVFileLocation, std::ios::out | std::ios::trunc);
     if (!cameraInfoCSVFile.is_open())
     {
-        logWarning("Failed to open CSV file for writing");
+        logWarning("Failed to open CSV file for writing: " + std::string(std::strerror(errno)));
     }
+
+    needCatpreNextFrame = false;
 }
 
 Properties RadiosityCollecter::getProperties() const
@@ -76,6 +92,7 @@ RenderPassReflection RadiosityCollecter::reflect(const CompileData& compileData)
     RenderPassReflection reflector;
     // reflector.addOutput("dst");
     addRenderPassInputs(reflector, kInputChannels);
+    addRenderPassOutputs(reflector, kOutputChannels);
     return reflector;
 }
 
@@ -88,12 +105,37 @@ void RadiosityCollecter::execute(RenderContext* pRenderContext, const RenderData
 {
     // renderData holds the requested resources
     // auto& pTexture = renderData.getTexture("src");
+    ref<Texture> posWTexture = renderData.getTexture(kInputPosition);
+    ref<Texture> accumulatedColorTexture = renderData.getTexture(kInputAccumulatedColor);
     if (needCatpreNextFrame)
     {
-        ref<Texture> posWTexture = renderData.getTexture(kInputPosition);
-        ref<Texture> accumulatedColorTexture = renderData.getTexture(kInputAccumulatedColor);
         captureAndSaveCollectedData(posWTexture, accumulatedColorTexture);
         needCatpreNextFrame = false;
+    }
+    // Render the frame same as GBufferRT.posW in posW output
+    if (mpScene)
+    {
+        auto copyTexture = [pRenderContext](Texture* pDst, const Texture* pSrc)
+        {
+            if (pDst && pSrc)
+            {
+                FALCOR_ASSERT(pDst && pSrc);
+                FALCOR_ASSERT(pDst->getFormat() == pSrc->getFormat());
+                FALCOR_ASSERT(pDst->getWidth() == pSrc->getWidth() && pDst->getHeight() == pSrc->getHeight());
+                pRenderContext->copyResource(pDst, pSrc);
+            }
+            else if (pDst)
+            {
+                pRenderContext->clearUAV(pDst->getUAV().get(), uint4(0, 0, 0, 0));
+            }
+        };
+
+        copyTexture(renderData.getTexture(kOutputPosition).get(), posWTexture.get());
+        copyTexture(renderData.getTexture(kOutputAccumulatedColor).get(), accumulatedColorTexture.get());
+    }
+    else
+    {
+        logWarning("No scene available");
     }
 }
 
@@ -115,10 +157,11 @@ void RadiosityCollecter::captureAndSaveCollectedData(ref<Texture> posWTexture, r
             std::filesystem::create_directories(outputDir);
         }
 
-        // append to camera.csv
+        // append to camera.csv and flush immediately
         cameraInfoCSVFile << fmt::format(
             "{},{},{},{},{},{},{}\n", imageDirName, cameraPos.x, cameraPos.y, cameraPos.z, cameraDir.x, cameraDir.y, cameraDir.z
         );
+        cameraInfoCSVFile.flush();
 
         // Save textures to the directory
         std::filesystem::path posWPath = outputDir / "posw.exr";

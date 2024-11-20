@@ -21,7 +21,6 @@ def render_graph_PathTracer(g):
     g.addEdge("VBufferRT.viewW", "PathTracer.viewW")
     g.addEdge("VBufferRT.mvec", "PathTracer.mvec")
     g.addEdge("PathTracer.color", "AccumulatePass.input")
-    g.markOutput("AccumulatePass.output")
     return g
 
 g = RenderGraph("RadiosityCollecter")
@@ -32,4 +31,8 @@ RadiosityCollecter = createPass("RadiosityCollecter")
 g.addPass(RadiosityCollecter, "RadiosityCollecter")
 g.addEdge("GBufferRT.posW", "RadiosityCollecter.posW")
 g.addEdge("AccumulatePass.output", "RadiosityCollecter.accumulatedColor")
-g.markOutput("AccumulatePass.output")
+
+g.markOutput("RadiosityCollecter.accumulatedColor")
+
+try: m.addGraph(g)
+except NameError: None
