@@ -530,3 +530,9 @@ endif()
 set(RTXDI_DIR ${PACKMAN_DIR}/rtxdi)
 add_library(rtxdi INTERFACE)
 target_include_directories(rtxdi INTERFACE ${RTXDI_DIR}/rtxdi-sdk/include)
+
+# -----------------------------------------------------------------------------
+# Dependencies in my projects
+# -----------------------------------------------------------------------------
+
+add_subdirectory(simple-socket-server)
