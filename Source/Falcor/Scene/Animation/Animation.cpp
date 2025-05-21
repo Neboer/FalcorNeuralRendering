@@ -115,9 +115,19 @@ namespace Falcor
     {
         // Calculate the sample time.
         double time = currentTime;
-        if (time < mKeyframes.front().time || time > mKeyframes.back().time)
+
+        if (!locked)
         {
-            time = calcSampleTime(currentTime);
+            if (time < mKeyframes.front().time || time > mKeyframes.back().time)
+            {
+                time = calcSampleTime(currentTime);
+            }
+        }
+        else
+        {
+            // if the animation is locked, we need to calculate the time based on the progress rate
+            time = getDuration() * progress_rate;
+            // Logger::log(Logger::Level::Info, "time: " + std::to_string(time));
         }
 
         // Determine if the animation behaves linearly outside of defined keyframes.
@@ -316,6 +326,8 @@ namespace Falcor
     {
         widget.dropdown("Pre-Infinity Behavior", kChannelLoopModeDropdown, reinterpret_cast<uint32_t&>(mPreInfinityBehavior));
         widget.dropdown("Post-Infinity Behavior", kChannelLoopModeDropdown, reinterpret_cast<uint32_t&>(mPostInfinityBehavior));
+        widget.checkbox("lock", locked);
+        widget.var("progress_rate", progress_rate, 0.0f, 1.0f);
     }
 
     FALCOR_SCRIPT_BINDING(Animation)

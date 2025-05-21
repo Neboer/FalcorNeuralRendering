@@ -470,6 +470,59 @@ namespace Falcor
         mpSkinningPass->execute(pRenderContext, mSkinningDispatchSize, 1, 1);
     }
 
+    void AnimationController::setTransform(int nodeID, const Animation::Keyframe new_transform)
+    {
+        float4x4 T = math::matrixFromTranslation(new_transform.translation);
+        float4x4 R = math::matrixFromQuat(new_transform.rotation);
+        float4x4 S = math::matrixFromScaling(new_transform.scaling);
+        float4x4 transform = mul(mul(T, R), S);
+
+        mLocalMatrices[nodeID] = transform;
+        mNodesEdited[nodeID] = true;
+    }
+
+    //Animation::Keyframe AnimationController::getTransform(int nodeID)
+    //{
+    //    // 获取节点的局部矩阵
+    //    const float4x4& localMatrix = mLocalMatrices[nodeID];
+
+    //    Animation::Keyframe result_transform = {};
+
+    //    // 提取平移
+    //    result_transform.translation = float3(localMatrix[3].x, localMatrix[3].y, localMatrix[3].z);
+
+    //    // 提取缩放
+    //    result_transform.scaling.x = length(float3(localMatrix[0].x, localMatrix[0].y, localMatrix[0].z));
+    //    result_transform.scaling.y = length(float3(localMatrix[1].x, localMatrix[1].y, localMatrix[1].z));
+    //    result_transform.scaling.z = length(float3(localMatrix[2].x, localMatrix[2].y, localMatrix[2].z));
+
+    //    // 处理镜像变换问题
+    //    if (determinant(float3x3(localMatrix[0].xyz(), localMatrix[1].xyz(), localMatrix[2].xyz())) < 0.0f)
+    //    {
+    //        result_transform.scaling = -result_transform.scaling;
+    //    }
+
+    //    // 提取旋转（避免 0 缩放导致的除法错误）
+    //    float3x3 rotationMatrix;
+    //    if (result_transform.scaling.x != 0.0f && result_transform.scaling.y != 0.0f && result_transform.scaling.z != 0.0f)
+    //    {
+    //        rotationMatrix = float3x3(
+    //            localMatrix[0].xyz() / result_transform.scaling.x,
+    //            localMatrix[1].xyz() / result_transform.scaling.y,
+    //            localMatrix[2].xyz() / result_transform.scaling.z
+    //        );
+    //    }
+    //    else
+    //    {
+    //        rotationMatrix = float3x3::identity(); // 退化为单位矩阵
+    //    }
+
+    //    // 旋转矩阵转换为四元数
+    //    result_transform.rotation = quatf(rotationMatrix);
+
+    //    return result_transform;
+    //}
+
     void AnimationController::renderUI(Gui::Widgets& widget)
     {
         if (widget.checkbox("Loop Animations", mLoopAnimations))

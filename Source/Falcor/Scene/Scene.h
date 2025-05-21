@@ -1068,6 +1068,10 @@ namespace Falcor
          */
         UpdateFlagsSignal::Interface getUpdateFlagsSignal() override { return mUpdateFlagsSignal.getInterface(); }
 
+        /** Neboer: set the transform of the object and update scene.
+        */
+        void setObjectTransform(uint32_t objectID, const Falcor::Animation::Keyframe& transform);
+
     public: /// IScene specific methods
         void getShaderDefines(DefineList& defines) const override
         {

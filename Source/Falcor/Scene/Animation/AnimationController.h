@@ -144,6 +144,12 @@ namespace Falcor
         */
         uint64_t getMemoryUsageInBytes() const;
 
+        /** directly set the transform of an object*/
+        void setTransform(int nodeID, const Animation::Keyframe new_transform);
+
+        /** Get the transform of an object*/
+        //Animation::Keyframe getTransform(int nodeID);
+
     private:
         friend class SceneBuilder;
         friend class Scene;

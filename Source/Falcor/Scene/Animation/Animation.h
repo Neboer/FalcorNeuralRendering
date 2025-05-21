@@ -46,6 +46,11 @@ namespace Falcor
     {
         FALCOR_OBJECT(Animation)
     public:
+
+        // lock the animation to a specific time
+        bool locked = false;
+        float progress_rate = 0.0; // 0-1
+
         enum class InterpolationMode
         {
             Linear,

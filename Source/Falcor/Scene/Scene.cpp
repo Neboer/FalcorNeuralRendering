@@ -4101,6 +4101,12 @@ namespace Falcor
         updateForInverseRendering(mpDevice->getRenderContext(), false, true);
     }
 
+    void Scene::setObjectTransform(uint32_t objectID, const Falcor::Animation::Keyframe& transform)
+    {
+        mpAnimationController->setTransform(objectID, transform);
+        finalize();
+    }
+
     inline pybind11::dict toPython(const Scene::SceneStats& stats)
     {
         pybind11::dict d;
@@ -4273,6 +4279,23 @@ namespace Falcor
 #endif
     }
 
+    inline void setObjectTransformPython(Scene& scene, uint32_t objectID, const pybind11::dict& dict)
+    {
+        Animation::Keyframe transform;
+        transform.time = dict["time"].cast<float>();
+
+        auto t = dict["translation"].cast<std::vector<float>>();
+        transform.translation = float3(t[0], t[1], t[2]);
+
+        auto r = dict["rotation"].cast<std::vector<float>>();
+        transform.rotation = quatf(r[0], r[1], r[2], r[3]);
+
+        auto s = dict["scaling"].cast<std::vector<float>>();
+        transform.scaling = float3(s[0], s[1], s[2]);
+
+        scene.setObjectTransform(objectID, transform);
+    }
+
     FALCOR_SCRIPT_BINDING(Scene)
     {
         using namespace pybind11::literals;
@@ -4375,5 +4398,6 @@ namespace Falcor
         scene.def("get_mesh", &Scene::getMesh, "mesh_id"_a);
         scene.def("get_mesh_vertices_and_indices", getMeshVerticesAndIndicesPython, "mesh_id"_a, "buffers"_a);
         scene.def("set_mesh_vertices", setMeshVerticesPython, "mesh_id"_a, "buffers"_a);
+        scene.def("set_object_transform_python", setObjectTransformPython, "object_id"_a, "transform"_a);
     }
 }
