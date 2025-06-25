@@ -38,24 +38,31 @@ namespace
 const std::string kInputPosition = "posW";
 const std::string kInputNorm = "normW";
 const std::string kInputAlbedo = "albedo";
-const std::string kInputAccumulatedColor = "accumulatedColor";
+const std::string kInputEmissive = "emissive";
+const std::string kInputSpecularAlbedo = "specularAlbedo";
+const std::string kInputIndirectAlbedo = "indirectAlbedo";
+const std::string kInputAccumulatedColor = "color";
 
-const std::string kOutputPosition = "posW";
-const std::string kOutputAccumulatedColor = "accumulatedColor";
+const std::string kOutputResult = "colorx";
 
 } // namespace
 
 const Falcor::ChannelList kInputChannels = {
     // clang-format off
-    {kInputPosition        , "gPosW"            , "Position in world space", true, ResourceFormat::RGBA32Float},
-    {kInputAccumulatedColor, "gAccumulatedColor", "Accumulated color"      , true, ResourceFormat::RGBA32Float}
+    {kInputPosition , "gPosW"            , "Position in world space", true, ResourceFormat::RGBA32Float},
+    {kInputNorm , "gNormW"           , "Normal Map"             , true, ResourceFormat::RGBA32Float},
+    {kInputAlbedo , "ptAlbedo"         , "Albedo"                 , true, ResourceFormat::RGBA8Unorm},
+    {kInputEmissive , "gEmissive"        , "Emissive"               , true, ResourceFormat::RGBA32Float},
+    {kInputSpecularAlbedo , "ptSpecularAlbedo" , "SpecularAlbedo"         , true, ResourceFormat::RGBA8Unorm},
+    {kInputIndirectAlbedo , "ptIndirectAlbedo" , "IndirectAlbedo"         , true, ResourceFormat::RGBA8Unorm},
+
+    {kInputAccumulatedColor, "ptResult"         , "Accumulate "            , true, ResourceFormat::RGBA32Float}
     // clang-format on
 };
 
 const Falcor::ChannelList kOutputChannels = {
     // clang-format off
-    {kOutputPosition        , "gPosW"            , "Position in world space", true, ResourceFormat::RGBA32Float},
-    {kOutputAccumulatedColor, "gAccumulatedColor", "Accumulated color"      , true, ResourceFormat::RGBA32Float}
+    {kOutputResult        , "ptResult"        , "Accumulated Result"    , true, ResourceFormat::RGBA32Float}
     // clang-format on
 };
 
@@ -109,9 +116,8 @@ void FSDRServer::execute(RenderContext* pRenderContext, const RenderData& render
 
     // renderData holds the requested resources
     // auto& pTexture = renderData.getTexture("src");
-    ref<Texture> posWTexture = renderData.getTexture(kInputPosition);
     ref<Texture> accumulatedColorTexture = renderData.getTexture(kInputAccumulatedColor);
-    waitRecvCamPosSendFilm(posWTexture, accumulatedColorTexture);
+    waitRecvCamPosSendFilm(renderData);
 
     // Render the frame same as GBufferRT.posW in posW output
     if (mpScene)
@@ -131,8 +137,7 @@ void FSDRServer::execute(RenderContext* pRenderContext, const RenderData& render
             }
         };
 
-        copyTexture(renderData.getTexture(kOutputPosition).get(), posWTexture.get());
-        copyTexture(renderData.getTexture(kOutputAccumulatedColor).get(), accumulatedColorTexture.get());
+        copyTexture(renderData.getTexture(kOutputResult).get(), accumulatedColorTexture.get());
     }
     else
     {
@@ -171,7 +176,7 @@ void sendFilePacket(const std::string& filePath, SimpleSocket* clientSocket)
     file.close();
 }
 
-void FSDRServer::waitRecvCamPosSendFilm(ref<Texture> posWTexture, ref<Texture> accumulatedColorTexture)
+void FSDRServer::waitRecvCamPosSendFilm(const RenderData& renderData)
 {
     // Capture and save the collected data
     if (mpScene)
@@ -180,19 +185,41 @@ void FSDRServer::waitRecvCamPosSendFilm(ref<Texture> posWTexture, ref<Texture> a
         {
             logInfo("Sending frame " + std::to_string(imageCount++));
             // Save textures to the directory and send it via socket
-            std::filesystem::path posWPath = mOutputDirectory + "/" + std::to_string(imageCount) + "-posw.exr";
-            std::filesystem::path accumulatedColorPath = mOutputDirectory + "/" + std::to_string(imageCount) + "-color.exr";
-            posWTexture->captureToFile(0, 0, posWPath, Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::None, false);
-            accumulatedColorTexture->captureToFile(0, 0, accumulatedColorPath, Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::None, false);
+            for (auto channel : kInputChannels)
+            {
+                std::filesystem::path channel_path = fmt::format("{}/{}-{}.exr", mOutputDirectory, imageCount, channel.name);
 
-            logInfo("Sending files: " + posWPath.string() + " and " + accumulatedColorPath.string());
-            sendFilePacket(posWPath.string(), std::move(clientSocket));
-            sendFilePacket(accumulatedColorPath.string(), std::move(clientSocket));
+                // Capture the texture to a file
+                if (channel.format == ResourceFormat::RGBA32Float)
+                {
+                    renderData.getTexture(channel.name)
+                        ->captureToFile(0, 0, channel_path, Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::None, false);
+                }
+                else if (channel.format == ResourceFormat::RGBA8Unorm)
+                {
+                    renderData.getTexture(channel.name)
+                        ->captureToFile(0, 0, channel_path, Bitmap::FileFormat::BmpFile, Falcor::Bitmap::ExportFlags::None, false);
+                }
+                else
+                {
+                    logError(fmt::format("Unsupported format for channel {}: {}", channel.name, channel.format));
+                    continue;
+                }
+
+            }
+
+            logInfo("Sending files: ");
+
+            for (auto channel : kInputChannels)
+            {
+                std::filesystem::path channel_path = fmt::format("{}/{}-{}.exr", mOutputDirectory, imageCount, channel.name);
+                sendFilePacket(channel_path.string(), std::move(clientSocket));
+            }
 
             logInfo("Sent files successfully");
             // delete saved files
-          /*  std::filesystem::remove(posWPath);
-            std::filesystem::remove(accumulatedColorPath);*/
+            /* std::filesystem::remove(posWPath);
+               std::filesystem::remove(accumulatedColorPath);*/
             needSendNextFrame = false;
         }
         else
@@ -209,10 +236,10 @@ void FSDRServer::waitRecvCamPosSendFilm(ref<Texture> posWTexture, ref<Texture> a
             }
             else
             {
-                logError("Failed to read camera position from socket");
-                exit(-1);
+                logError("socket error, start socket server again...");
+                delete socketServer;
+                socketServer = new SimpleSocketServer(11451);
             }
-
         }
     }
     else

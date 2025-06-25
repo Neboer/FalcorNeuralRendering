@@ -62,7 +62,7 @@ public:
 
 private:
     int imageCount = 0;
-    void waitRecvCamPosSendFilm(ref<Texture> posWTexture, ref<Texture> accumulatedColorTexture);
+    void waitRecvCamPosSendFilm(const RenderData& renderData);
     ref<IScene> mpScene;
     std::string mOutputDirectory;
     void setOutputDirectory(std::string newOutputDir);
