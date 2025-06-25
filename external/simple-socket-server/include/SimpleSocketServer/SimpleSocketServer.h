@@ -17,6 +17,8 @@
 #include <stdexcept>
 #include <string>
 
+constexpr int ERROR_SOCKET_CLOSE = -1;
+
 class SimpleSocket {
 public:
     SimpleSocket(SOCKET sock = INVALID_SOCKET);

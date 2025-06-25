@@ -27,7 +27,7 @@ size_t SimpleSocket::read(char* buffer, size_t size) {
     int received = recv(sock_, buffer, static_cast<int>(size), 0);
     if (received <= 0) {
         close();
-        return 0;
+        return ERROR_SOCKET_CLOSE;
     }
     return static_cast<size_t>(received);
 }
