@@ -39,8 +39,12 @@ const std::string kInputPosition = "posW";
 const std::string kInputNorm = "normW";
 const std::string kInputAlbedo = "albedo";
 const std::string kInputEmissive = "emissive";
-const std::string kInputSpecularAlbedo = "specularAlbedo";
-const std::string kInputIndirectAlbedo = "indirectAlbedo";
+//const std::string kInputSpecularAlbedo = "specularAlbedo";
+//const std::string kInputIndirectAlbedo = "indirectAlbedo";
+const std::string kInputTangent = "tangentW";
+const std::string kInputDepth = "depth";
+
+
 const std::string kInputAccumulatedColor = "color";
 
 const std::string kOutputResult = "colorx";
@@ -51,10 +55,12 @@ const Falcor::ChannelList kInputChannels = {
     // clang-format off
     {kInputPosition , "gPosW"            , "Position in world space", true, ResourceFormat::RGBA32Float},
     {kInputNorm , "gNormW"           , "Normal Map"             , true, ResourceFormat::RGBA32Float},
-    {kInputAlbedo , "ptAlbedo"         , "Albedo"                 , true, ResourceFormat::RGBA8Unorm},
+    {kInputAlbedo , "ptAlbedo"         , "Albedo"                 , true, ResourceFormat::RGBA32Float}, // GbufferRT's diffuse opacity is albedo.
+    // { "diffuseOpacity",             "gDiffOpacity",                 "Diffuse reflection albedo and opacity",                   true /* optional */, ResourceFormat::RGBA32Float  
     {kInputEmissive , "gEmissive"        , "Emissive"               , true, ResourceFormat::RGBA32Float},
-    {kInputSpecularAlbedo , "ptSpecularAlbedo" , "SpecularAlbedo"         , true, ResourceFormat::RGBA8Unorm},
-    {kInputIndirectAlbedo , "ptIndirectAlbedo" , "IndirectAlbedo"         , true, ResourceFormat::RGBA8Unorm},
+    {kInputTangent,       "gTangentW",        "Shading tangent in world space (xyz) and sign (w)", true /* optional */, ResourceFormat::RGBA32Float },
+    {kInputDepth, "gDepth", "Depth buffer (NDC)", true , ResourceFormat::R32Float},
+
 
     {kInputAccumulatedColor, "ptResult"         , "Accumulate "            , true, ResourceFormat::RGBA32Float}
     // clang-format on
@@ -176,6 +182,7 @@ void sendFilePacket(const std::string& filePath, SimpleSocket* clientSocket)
     file.close();
 }
 
+// frame driver
 void FSDRServer::waitRecvCamPosSendFilm(const RenderData& renderData)
 {
     // Capture and save the collected data
@@ -190,16 +197,16 @@ void FSDRServer::waitRecvCamPosSendFilm(const RenderData& renderData)
                 std::filesystem::path channel_path = fmt::format("{}/{}-{}.exr", mOutputDirectory, imageCount, channel.name);
 
                 // Capture the texture to a file
-                if (channel.format == ResourceFormat::RGBA32Float)
+                if (channel.format == ResourceFormat::RGBA32Float || channel.format == ResourceFormat::R32Float)
                 {
                     renderData.getTexture(channel.name)
                         ->captureToFile(0, 0, channel_path, Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::None, false);
                 }
-                else if (channel.format == ResourceFormat::RGBA8Unorm)
-                {
-                    renderData.getTexture(channel.name)
-                        ->captureToFile(0, 0, channel_path, Bitmap::FileFormat::BmpFile, Falcor::Bitmap::ExportFlags::None, false);
-                }
+                //else if (channel.format == ResourceFormat::RGBA8Unorm)
+                //{
+                //    renderData.getTexture(channel.name)
+                //        ->captureToFile(0, 0, channel_path, Bitmap::FileFormat::BmpFile, Falcor::Bitmap::ExportFlags::None, false);
+                //}
                 else
                 {
                     logError(fmt::format("Unsupported format for channel {}: {}", channel.name, channel.format));
