@@ -232,8 +232,8 @@ void FSDRServer::waitRecvCamPosSendFilm(const RenderData& renderData)
         else
         {
             // wait to read a camera positon info
-            CameraControl recvCameraControl;
-            if (clientSocket->read_exact(reinterpret_cast<char*>(&recvCameraControl), sizeof(CameraControl)))
+            PointXYZ recvCameraControl;
+            if (clientSocket->read_exact(reinterpret_cast<char*>(&recvCameraControl), sizeof(PointXYZ)))
             {
                 logInfo(fmt::format(
                     "Received camera position: x = {}, y = {}, z = {}", recvCameraControl.x, recvCameraControl.y, recvCameraControl.z

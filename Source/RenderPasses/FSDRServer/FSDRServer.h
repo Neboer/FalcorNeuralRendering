@@ -34,11 +34,17 @@
 using namespace Falcor;
 
 #pragma pack(push, 1) // disable memory alignment
-struct CameraControl
+struct PointXYZ
 {
     float x;
     float y;
     float z;
+};
+
+struct SceneMetadatas
+{
+    PointXYZ FarPoint;
+    PointXYZ NearPoint;
 };
 #pragma pack(pop)
 
