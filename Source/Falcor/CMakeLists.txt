@@ -975,6 +975,7 @@ endif()
 target_link_libraries(Falcor
     PUBLIC
 		SimpleSocketServer
+		httplib::httplib
         fmt pybind11::embed Vulkan::Headers
         slang slang-gfx
         imgui imgui_addons

@@ -28,7 +28,7 @@
 #include "FSDRServer.h"
 #include "RenderGraph/RenderPassHelpers.h"
 #include "RenderGraph/RenderPassStandardFlags.h"
-// #include "Rendering/Lights/EmissiveUniformSampler.h"
+#include "Rendering/Lights/EmissiveUniformSampler.h"
 #include "Utils/UI/Gui.h"
 #include <fmt/format.h>
 
@@ -39,11 +39,10 @@ const std::string kInputPosition = "posW";
 const std::string kInputNorm = "normW";
 const std::string kInputAlbedo = "albedo";
 const std::string kInputEmissive = "emissive";
-//const std::string kInputSpecularAlbedo = "specularAlbedo";
-//const std::string kInputIndirectAlbedo = "indirectAlbedo";
+// const std::string kInputSpecularAlbedo = "specularAlbedo";
+// const std::string kInputIndirectAlbedo = "indirectAlbedo";
 const std::string kInputTangent = "tangentW";
 const std::string kInputDepth = "depth";
-
 
 const std::string kInputAccumulatedColor = "color";
 
@@ -77,17 +76,11 @@ extern "C" FALCOR_API_EXPORT void registerPlugin(Falcor::PluginRegistry& registr
     registry.registerClass<RenderPass, FSDRServer>();
 }
 
-FSDRServer::FSDRServer(ref<Device> pDevice, const Properties& props) : RenderPass(pDevice)
+FSDRServer::FSDRServer(ref<Device> pDevice, const Properties& props)
+    : RenderPass(pDevice)
+    , httpBackend(std::string("127.0.0.1"), 11452, FalcorContext{&kInputChannels, nullptr, std::nullopt, mpScene.get()})
 {
-    const char* envOutputDir = std::getenv("FSDRServerOutputDir");
-    mOutputDirectory = envOutputDir ? envOutputDir : "FSDRServerOutput";
-    if (!std::filesystem::exists(mOutputDirectory))
-    {
-        std::filesystem::create_directories(mOutputDirectory);
-    }
-
     // Initialize the socket server
-    socketServer = new SimpleSocketServer(11451);
 }
 
 Properties FSDRServer::getProperties() const
@@ -112,43 +105,36 @@ void FSDRServer::setOutputDirectory(std::string newOutputDir)
 
 void FSDRServer::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
-    // make sure the socket is open
-    if (clientSocket == nullptr)
-    {
-        logInfo("Waiting for client connection...");
-        clientSocket = socketServer->accept();
-        logInfo("Client connected");
-    }
-
+    httpBackend.SetRenderingContext(pRenderContext, renderData);
     // renderData holds the requested resources
     // auto& pTexture = renderData.getTexture("src");
-    ref<Texture> accumulatedColorTexture = renderData.getTexture(kInputAccumulatedColor);
-    waitRecvCamPosSendFilm(renderData);
+    //ref<Texture> accumulatedColorTexture = renderData.getTexture(kInputAccumulatedColor);
+    //waitRecvCamPosSendFilm(renderData);
 
     // Render the frame same as GBufferRT.posW in posW output
-    if (mpScene)
-    {
-        auto copyTexture = [pRenderContext](Texture* pDst, const Texture* pSrc)
-        {
-            if (pDst && pSrc)
-            {
-                FALCOR_ASSERT(pDst && pSrc);
-                FALCOR_ASSERT(pDst->getFormat() == pSrc->getFormat());
-                FALCOR_ASSERT(pDst->getWidth() == pSrc->getWidth() && pDst->getHeight() == pSrc->getHeight());
-                pRenderContext->copyResource(pDst, pSrc);
-            }
-            else if (pDst)
-            {
-                pRenderContext->clearUAV(pDst->getUAV().get(), uint4(0, 0, 0, 0));
-            }
-        };
+    //if (mpScene)
+    //{
+    //    auto copyTexture = [pRenderContext](Texture* pDst, const Texture* pSrc)
+    //    {
+    //        if (pDst && pSrc)
+    //        {
+    //            FALCOR_ASSERT(pDst && pSrc);
+    //            FALCOR_ASSERT(pDst->getFormat() == pSrc->getFormat());
+    //            FALCOR_ASSERT(pDst->getWidth() == pSrc->getWidth() && pDst->getHeight() == pSrc->getHeight());
+    //            pRenderContext->copyResource(pDst, pSrc);
+    //        }
+    //        else if (pDst)
+    //        {
+    //            pRenderContext->clearUAV(pDst->getUAV().get(), uint4(0, 0, 0, 0));
+    //        }
+    //    };
 
-        copyTexture(renderData.getTexture(kOutputResult).get(), accumulatedColorTexture.get());
-    }
-    else
-    {
-        logWarning("No scene available");
-    }
+    //    copyTexture(renderData.getTexture(kOutputResult).get(), accumulatedColorTexture.get());
+    //}
+    //else
+    //{
+    //    logWarning("No scene available");
+    //}
 }
 
 // send file to the client, send a unsinged long long size_t first.
@@ -202,17 +188,16 @@ void FSDRServer::waitRecvCamPosSendFilm(const RenderData& renderData)
                     renderData.getTexture(channel.name)
                         ->captureToFile(0, 0, channel_path, Bitmap::FileFormat::ExrFile, Falcor::Bitmap::ExportFlags::None, false);
                 }
-                //else if (channel.format == ResourceFormat::RGBA8Unorm)
+                // else if (channel.format == ResourceFormat::RGBA8Unorm)
                 //{
-                //    renderData.getTexture(channel.name)
-                //        ->captureToFile(0, 0, channel_path, Bitmap::FileFormat::BmpFile, Falcor::Bitmap::ExportFlags::None, false);
-                //}
+                //     renderData.getTexture(channel.name)
+                //         ->captureToFile(0, 0, channel_path, Bitmap::FileFormat::BmpFile, Falcor::Bitmap::ExportFlags::None, false);
+                // }
                 else
                 {
                     logError(fmt::format("Unsupported format for channel {}: {}", channel.name, channel.format));
                     continue;
                 }
-
             }
 
             logInfo("Sending files: ");
@@ -220,7 +205,7 @@ void FSDRServer::waitRecvCamPosSendFilm(const RenderData& renderData)
             for (auto channel : kInputChannels)
             {
                 std::filesystem::path channel_path = fmt::format("{}/{}-{}.exr", mOutputDirectory, imageCount, channel.name);
-                sendFilePacket(channel_path.string(), std::move(clientSocket));
+                //sendFilePacket(channel_path.string(), std::move(clientSocket));
             }
 
             logInfo("Sent files successfully");
@@ -232,21 +217,21 @@ void FSDRServer::waitRecvCamPosSendFilm(const RenderData& renderData)
         else
         {
             // wait to read a camera positon info
-            PointXYZ recvCameraControl;
-            if (clientSocket->read_exact(reinterpret_cast<char*>(&recvCameraControl), sizeof(PointXYZ)))
-            {
-                logInfo(fmt::format(
-                    "Received camera position: x = {}, y = {}, z = {}", recvCameraControl.x, recvCameraControl.y, recvCameraControl.z
-                ));
-                mpScene->getCamera()->setPosition(float3(recvCameraControl.x, recvCameraControl.y, recvCameraControl.z));
-                needSendNextFrame = true;
-            }
-            else
-            {
-                logError("socket error, start socket server again...");
-                delete socketServer;
-                socketServer = new SimpleSocketServer(11451);
-            }
+            // PointXYZ recvCameraControl;
+            //if (clientSocket->read_exact(reinterpret_cast<char*>(&recvCameraControl), sizeof(PointXYZ)))
+            //{
+            //    logInfo(fmt::format(
+            //        "Received camera position: x = {}, y = {}, z = {}", recvCameraControl.x, recvCameraControl.y, recvCameraControl.z
+            //    ));
+            //    mpScene->getCamera()->setPosition(float3(recvCameraControl.x, recvCameraControl.y, recvCameraControl.z));
+            //    needSendNextFrame = true;
+            //}
+            //else
+            //{
+            //    logError("socket error, start socket server again...");
+            //    delete socketServer;
+            //    socketServer = new SimpleSocketServer(11451);
+            //}
         }
     }
     else

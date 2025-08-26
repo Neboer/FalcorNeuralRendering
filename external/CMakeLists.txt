@@ -536,3 +536,4 @@ target_include_directories(rtxdi INTERFACE ${RTXDI_DIR}/rtxdi-sdk/include)
 # -----------------------------------------------------------------------------
 
 add_subdirectory(simple-socket-server)
+add_subdirectory(httplib)

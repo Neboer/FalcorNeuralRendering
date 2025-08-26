@@ -29,6 +29,7 @@
 #include "Falcor.h"
 #include "RenderGraph/RenderPass.h"
 #include "SimpleSocketServer/SimpleSocketServer.h"
+#include "HTTPBackend.h"
 #include <fstream>
 
 using namespace Falcor;
@@ -77,8 +78,8 @@ private:
 
     bool needSendNextFrame = false;
 
-    SimpleSocketServer* socketServer = nullptr;
-    SimpleSocket* clientSocket = nullptr;
+    HTTPBackend httpBackend;
+    
 
 protected:
 };
