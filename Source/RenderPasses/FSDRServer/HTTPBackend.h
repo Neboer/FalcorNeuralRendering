@@ -8,12 +8,15 @@
 #include "RenderGraph/RenderPassStandardFlags.h"
 #include <Core/API/RenderContext.h>
 #include <optional>
+#include "ABSynchronizer.h"
 
-struct FalcorContext {
+struct FalcorContext
+{
     const Falcor::ChannelList* channels;
     Falcor::RenderContext* pRenderContext;
     std::optional<std::reference_wrapper<const Falcor::RenderData>> renderData;
     Falcor::IScene* pScene;
+    ABSynchronizer* pABSync;
 };
 
 class HTTPBackend
@@ -30,11 +33,7 @@ public:
     HTTPBackend(HTTPBackend&&) = default;
     HTTPBackend& operator=(HTTPBackend&&) = default;
 
-
     void SetRenderingContext(Falcor::RenderContext* pRenderContext, const Falcor::RenderData& renderData);
-
-    // 关闭
-    void close();
 
 private:
     FalcorContext context;

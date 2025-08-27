@@ -31,6 +31,7 @@
 #include "SimpleSocketServer/SimpleSocketServer.h"
 #include "HTTPBackend.h"
 #include <fstream>
+#include "ABSynchronizer.h"
 
 using namespace Falcor;
 
@@ -69,7 +70,7 @@ public:
 
 private:
     int imageCount = 0;
-    void waitRecvCamPosSendFilm(const RenderData& renderData);
+
     ref<IScene> mpScene;
     std::string mOutputDirectory;
     void setOutputDirectory(std::string newOutputDir);
@@ -79,6 +80,7 @@ private:
     bool needSendNextFrame = false;
 
     HTTPBackend httpBackend;
+    ABSynchronizer abSync;
     
 
 protected:
