@@ -50,6 +50,15 @@ struct SceneMetadatas
 };
 #pragma pack(pop)
 
+
+struct Rect
+{
+    int x;
+    int y;
+    int width;
+    int height;
+};
+
 class FSDRServer : public RenderPass
 {
 public:
@@ -76,11 +85,13 @@ private:
     void setOutputDirectory(std::string newOutputDir);
 
     std::filesystem::path cameraInfoCSVFileLocation;
+    std::unique_ptr<Buffer> getBufferByChannelName(std::string channelName);
 
     bool needSendNextFrame = false;
 
     HTTPBackend httpBackend;
     ABSynchronizer abSync;
+    Rect rtMaskParams = {0, 0, 0, 0};
     
 
 protected:

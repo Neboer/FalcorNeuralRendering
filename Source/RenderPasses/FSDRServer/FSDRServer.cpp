@@ -47,7 +47,7 @@ const std::string kInputDepth = "depth";
 const std::string kInputAccumulatedColor = "color";
 
 const std::string kOutputResult = "colorx";
-
+const std::string kOutputRTMask = "rtMask";
 } // namespace
 
 const Falcor::ChannelList kInputChannels = {
@@ -67,7 +67,8 @@ const Falcor::ChannelList kInputChannels = {
 
 const Falcor::ChannelList kOutputChannels = {
     // clang-format off
-    {kOutputResult        , "ptResult"        , "Accumulated Result"    , true, ResourceFormat::RGBA32Float}
+    //{kOutputResult        , "ptResult"        , "Accumulated Result"    , true, ResourceFormat::RGBA32Float}
+    {kOutputRTMask       , "rtMask"        , "Ray Tracing Mask"    , true, ResourceFormat::R8Uint}
     // clang-format on
 };
 
@@ -102,10 +103,34 @@ void FSDRServer::execute(RenderContext* pRenderContext, const RenderData& render
 {
     //abSync.enterFromA();
     httpBackend.SetRenderingContext(pRenderContext, renderData);
+
+    // create R8Uint texture total black;
+    auto preparedRenderingData = std::vector<uint8_t>(renderData.getDefaultTextureDims().x * renderData.getDefaultTextureDims().y, 0);
+    if (rtMaskParams.width && rtMaskParams.height)
+    {
+        const int texWidth = renderData.getDefaultTextureDims().x;
+        for (int y = 0; y < rtMaskParams.height; y++)
+        {
+            // 计算该行起始地址
+            uint8_t* rowStart = preparedRenderingData.data() + (rtMaskParams.y + y) * texWidth + rtMaskParams.x;
+
+            // 用 memset 一次性写 width 个字节为 1
+            std::memset(rowStart, 1, rtMaskParams.width);
+        }
+    }
+
+    Texture* rtMaskTexture = renderData.getTexture(kOutputRTMask).get();
+    uint32_t subresourceID = rtMaskTexture->getSubresourceIndex(0, 0);
+    rtMaskTexture->setSubresourceBlob(subresourceID, preparedRenderingData.data(), preparedRenderingData.size());
+    rtMaskTexture->getTextureSizeInBytes();
 }
 
 void FSDRServer::renderUI(Gui::Widgets& widget)
 {
-    widget.textbox("output directory", mOutputDirectory);
-    needSendNextFrame = widget.button("capture");
+    //widget.textbox("output directory", mOutputDirectory);
+    //needSendNextFrame = widget.button("capture");
+    widget.slider("rtMask x", rtMaskParams.x, 0, 100);
+    widget.slider("rtMask y", rtMaskParams.y, 0, 100);
+    widget.slider("rtMask width", rtMaskParams.width, 0, 100);
+    widget.slider("rtMask height", rtMaskParams.height, 0, 100);
 }
