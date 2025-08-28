@@ -67,11 +67,12 @@ HTTPBackend::HTTPBackend(std::string host, int port, FalcorContext context) : co
                         {
                             // Read texture data
                             size_t dataSize = tex->getWidth() * tex->getHeight() * getFormatBytesPerBlock(tex->getFormat());
-                            std::vector<uint8_t> data(dataSize);
                             uint32_t subresource = tex->getSubresourceIndex(0, 0);
-                            this->context.pRenderContext->readTextureSubresource(tex.get(), subresource);
+                            // this->context.pRenderContext->readTextureSubresource(tex.get(), subresource);
+                            std::vector<uint8_t> textureData = this->context.pRenderContext->readTextureSubresource(tex.get(), subresource);
+
                             // Send as binary
-                            res.set_content(reinterpret_cast<const char*>(data.data()), dataSize, "application/octet-stream");
+                            res.set_content(reinterpret_cast<const char*>(textureData.data()), dataSize, "application/octet-stream");
                             res.status = 200;
                             return;
                         }
