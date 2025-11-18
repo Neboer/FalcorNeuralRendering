@@ -146,10 +146,12 @@ endif()
 # -----------------------------------------------------------------------------
 
 if(FALCOR_USE_SYSTEM_PYTHON)
+	message(STATUS "Using SYSTEM PYTHON.")
     find_package(Python COMPONENTS Interpreter Development REQUIRED)
 else()
     set(Python_ROOT_DIR ${CMAKE_SOURCE_DIR}/external/packman/python)
-    find_package(Python COMPONENTS Interpreter Development REQUIRED)
+    message(STATUS "Using FALCOR PYTHON at ${Python_ROOT_DIR}.")
+    find_package(Python 3.10 COMPONENTS Interpreter Development REQUIRED)
 endif()
 
 if(FALCOR_WINDOWS)

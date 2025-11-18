@@ -79,7 +79,7 @@ extern "C" FALCOR_API_EXPORT void registerPlugin(Falcor::PluginRegistry& registr
 
 FSDRServer::FSDRServer(ref<Device> pDevice, const Properties& props)
     : RenderPass(pDevice)
-    , httpBackend(std::string("127.0.0.1"), 11452, FalcorContext{&kInputChannels, nullptr, std::nullopt, mpScene.get(), &abSync})
+    /*, httpBackend(std::string("127.0.0.1"), 11452, FalcorContext{&kInputChannels, nullptr, std::nullopt, mpScene.get(), &abSync})*/
 {
     // Initialize the socket server
 }
@@ -102,7 +102,7 @@ RenderPassReflection FSDRServer::reflect(const CompileData& compileData)
 void FSDRServer::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
     //abSync.enterFromA();
-    httpBackend.SetRenderingContext(pRenderContext, renderData);
+    /*httpBackend.SetRenderingContext(pRenderContext, renderData);*/
 
     // create R8Uint texture total black;
     auto preparedRenderingData = std::vector<uint8_t>(renderData.getDefaultTextureDims().x * renderData.getDefaultTextureDims().y, 0);

@@ -32,3 +32,5 @@
 *.bak
 *.swp
 slangdconfig.json
+external/rendering-server/include/httplib
+external/rendering-server/httplib

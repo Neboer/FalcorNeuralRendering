@@ -535,5 +535,5 @@ target_include_directories(rtxdi INTERFACE ${RTXDI_DIR}/rtxdi-sdk/include)
 # Dependencies in my projects
 # -----------------------------------------------------------------------------
 
-add_subdirectory(simple-socket-server)
-add_subdirectory(httplib)
+#add_subdirectory(simple-socket-server)
+add_subdirectory(rendering-server)

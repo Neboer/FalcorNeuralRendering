@@ -37,6 +37,8 @@
 #include "Utils/Timing/TimeReport.h"
 #include "Utils/Settings/Settings.h"
 
+#include "RenderingServer/ServiceRegistry.h"
+
 #include <args.hxx>
 
 #include <filesystem>
@@ -971,5 +973,8 @@ int runMain(int argc, char** argv)
 int main(int argc, char** argv)
 {
     //return runMain(argc, argv);
+    auto server = std::make_shared<RenderingServer>("127.0.0.1", 11451);
+    ServiceRegistry::instance().registerServer(server);
+
     return catchAndReportAllExceptions([&]() { return runMain(argc, argv); });
 }

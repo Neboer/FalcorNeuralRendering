@@ -28,10 +28,7 @@
 #pragma once
 #include "Falcor.h"
 #include "RenderGraph/RenderPass.h"
-#include "SimpleSocketServer/SimpleSocketServer.h"
-#include "HTTPBackend.h"
 #include <fstream>
-#include "ABSynchronizer.h"
 
 using namespace Falcor;
 
@@ -89,8 +86,6 @@ private:
 
     bool needSendNextFrame = false;
 
-    HTTPBackend httpBackend;
-    ABSynchronizer abSync;
     Rect rtMaskParams = {0, 0, 0, 0};
     
 
