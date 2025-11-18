@@ -104,25 +104,8 @@ void FSDRServer::execute(RenderContext* pRenderContext, const RenderData& render
     //abSync.enterFromA();
     /*httpBackend.SetRenderingContext(pRenderContext, renderData);*/
 
-    // create R8Uint texture total black;
-    auto preparedRenderingData = std::vector<uint8_t>(renderData.getDefaultTextureDims().x * renderData.getDefaultTextureDims().y, 0);
-    if (rtMaskParams.width && rtMaskParams.height)
-    {
-        const int texWidth = renderData.getDefaultTextureDims().x;
-        for (int y = 0; y < rtMaskParams.height; y++)
-        {
-            // 计算该行起始地址
-            uint8_t* rowStart = preparedRenderingData.data() + (rtMaskParams.y + y) * texWidth + rtMaskParams.x;
 
-            // 用 memset 一次性写 width 个字节为 1
-            std::memset(rowStart, 1, rtMaskParams.width);
-        }
-    }
-
-    Texture* rtMaskTexture = renderData.getTexture(kOutputRTMask).get();
-    uint32_t subresourceID = rtMaskTexture->getSubresourceIndex(0, 0);
-    rtMaskTexture->setSubresourceBlob(subresourceID, preparedRenderingData.data(), preparedRenderingData.size());
-    rtMaskTexture->getTextureSizeInBytes();
+    //rtMaskTexture->getTextureSizeInBytes();
 }
 
 void FSDRServer::renderUI(Gui::Widgets& widget)

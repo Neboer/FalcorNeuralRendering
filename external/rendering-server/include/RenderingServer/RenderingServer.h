@@ -5,16 +5,8 @@
 #include <vector>
 #include "RenderingServer/SafeMutex.h"
 #include <thread>
+#include <optional>
 
-
-// 这个是用来给RTMask模块设置裁剪窗口的结构体
-struct CropWindow
-{
-    int x;
-    int y;
-    int width;
-    int height;
-};
 
 // 用于处理渲染请求的服务器类，包裹httplib中的服务器对象，提供一些方便的方法。
 // 整个服务器只有一个这样的实例，采用静态方法进行访问。
@@ -32,10 +24,11 @@ private:
     void BindSetCropWindow();
     void BindServerHello();
     void BindTestSafeMutex();
+    void BindRenderingHandler();
 
 public:
     // set_crop_window 用于设置裁剪窗口的API操作的变量
-    CropWindow cropWindow;
+    nlohmann::json cropWindow;
     // set_param_and_render 用于设置参数并渲染的API操作的变量
     std::function<void(nlohmann::json)> sendRenderData; // 如果渲染结果准备好了，通过此函数发送。
     SafeMutex renderMutex; // 创建后锁住，如果有渲染请求则由RenderingServer释放。FSDRServer必须锁上此锁才能动作。

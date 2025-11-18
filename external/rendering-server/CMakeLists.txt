@@ -5,7 +5,6 @@ project(RenderingServer LANGUAGES CXX)
 add_library(RenderingServer STATIC
     RenderingServer.cpp
     SafeMutex.cpp
-    ServiceRegistry.cpp
     RenderingServerOnRender.cpp
 )
 

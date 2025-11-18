@@ -36,11 +36,7 @@ void RenderingServer::BindSetCropWindow()
         {
             try
             {
-                auto jsonData = nlohmann::json::parse(req.body);
-                this->cropWindow.x = jsonData.at("x").get<int>();
-                this->cropWindow.y = jsonData.at("y").get<int>();
-                this->cropWindow.width = jsonData.at("w").get<int>();
-                this->cropWindow.height = jsonData.at("h").get<int>();
+                this->cropWindow = nlohmann::json::parse(req.body);
                 SendJSONDataResponse(res, 200, MakeResponse(true));
             }
             catch (const std::exception& e)
@@ -88,7 +84,7 @@ void RenderingServer::BindTestSafeMutex()
     );
 }
 
-RenderingServer::RenderingServer(std::string host, int port) : /* server(),*/ cropWindow{0, 0, 0, 0}
+RenderingServer::RenderingServer(std::string host, int port) : cropWindow{{"x", 0}, {"y", 0}, {"width", 100}, {"height", 100}}
 {
     renderMutex.lock(); // 一开始锁住，等有渲染请求时再解锁。
     BindServerHello();

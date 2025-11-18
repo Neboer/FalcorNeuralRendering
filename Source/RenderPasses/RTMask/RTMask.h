@@ -28,66 +28,34 @@
 #pragma once
 #include "Falcor.h"
 #include "RenderGraph/RenderPass.h"
-#include <fstream>
+#include "RenderingServer/RenderingServer.h"
+
 
 using namespace Falcor;
 
-#pragma pack(push, 1) // disable memory alignment
-struct PointXYZ
+class RTMask : public RenderPass
 {
-    float x;
-    float y;
-    float z;
-};
+private:
+    RenderingServer* server;
 
-struct SceneMetadatas
-{
-    PointXYZ FarPoint;
-    PointXYZ NearPoint;
-};
-#pragma pack(pop)
-
-
-struct Rect
-{
-    int x;
-    int y;
-    int width;
-    int height;
-};
-
-class FSDRServer : public RenderPass
-{
 public:
-    FALCOR_PLUGIN_CLASS(FSDRServer, "FSDRServer", "Insert pass description here.");
+    FALCOR_PLUGIN_CLASS(RTMask, "RTMask", "Insert pass description here.");
 
-    static ref<FSDRServer> create(ref<Device> pDevice, const Properties& props) { return make_ref<FSDRServer>(pDevice, props); }
+    static ref<RTMask> create(ref<Device> pDevice, const Properties& props)
+    {
+        return make_ref<RTMask>(pDevice, props);
+    }
 
-    FSDRServer(ref<Device> pDevice, const Properties& props);
+    RTMask(ref<Device> pDevice, const Properties& props);
 
     virtual Properties getProperties() const override;
     virtual RenderPassReflection reflect(const CompileData& compileData) override;
     virtual void compile(RenderContext* pRenderContext, const CompileData& compileData) override {}
     virtual void execute(RenderContext* pRenderContext, const RenderData& renderData) override;
     virtual void renderUI(Gui::Widgets& widget) override;
-    virtual void setScene(RenderContext* pRenderContext, const ref<Scene>& pScene) override { mpScene = pScene; }
+    virtual void setScene(RenderContext* pRenderContext, const ref<Scene>& pScene) override {}
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
 private:
-    int imageCount = 0;
-
-    ref<IScene> mpScene;
-    std::string mOutputDirectory;
-    void setOutputDirectory(std::string newOutputDir);
-
-    std::filesystem::path cameraInfoCSVFileLocation;
-    //std::unique_ptr<Buffer> getBufferByChannelName(std::string channelName);
-
-    bool needSendNextFrame = false;
-
-    Rect rtMaskParams = {0, 0, 0, 0};
-    
-
-protected:
 };
