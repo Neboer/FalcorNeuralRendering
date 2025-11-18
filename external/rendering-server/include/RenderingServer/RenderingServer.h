@@ -25,6 +25,14 @@ private:
     httplib::Server server;
     std::thread serverThread;
 
+    static nlohmann::json MakeResponse(bool success, std::string errorData = "");
+    static void SendBJDataResponse(httplib::Response& res, int code, const nlohmann::json& jsonData);
+    static void SendJSONDataResponse(httplib::Response& res, int code, const nlohmann::json& jsonData);
+
+    void BindSetCropWindow();
+    void BindServerHello();
+    void BindTestSafeMutex();
+
 public:
     // set_crop_window 用于设置裁剪窗口的API操作的变量
     CropWindow cropWindow;

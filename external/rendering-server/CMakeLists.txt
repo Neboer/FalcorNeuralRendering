@@ -6,6 +6,7 @@ add_library(RenderingServer STATIC
     RenderingServer.cpp
     SafeMutex.cpp
     ServiceRegistry.cpp
+    RenderingServerOnRender.cpp
 )
 
 # 设置包含目录（使用INTERFACE属性以便父项目继承）
