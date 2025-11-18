@@ -53,7 +53,10 @@ void Scripting::start()
 #else
         static std::filesystem::path pythonHome{getRuntimeDirectory() / "pythondist"};
 #endif
+#pragma warning(push)
+#pragma warning(disable : 4996)
         Py_SetPythonHome(pythonHome.wstring().c_str());
+#pragma warning(pop)
 
         try
         {
