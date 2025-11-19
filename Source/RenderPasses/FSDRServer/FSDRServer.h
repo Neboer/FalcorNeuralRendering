@@ -28,38 +28,15 @@
 #pragma once
 #include "Falcor.h"
 #include "RenderGraph/RenderPass.h"
+#include "RenderingServer/RenderingServer.h"
 #include <fstream>
 
 using namespace Falcor;
 
-#pragma pack(push, 1) // disable memory alignment
-struct PointXYZ
-{
-    float x;
-    float y;
-    float z;
-};
-
-struct SceneMetadatas
-{
-    PointXYZ FarPoint;
-    PointXYZ NearPoint;
-};
-#pragma pack(pop)
-
-
-struct Rect
-{
-    int x;
-    int y;
-    int width;
-    int height;
-};
-
 class FSDRServer : public RenderPass
 {
 public:
-    FALCOR_PLUGIN_CLASS(FSDRServer, "FSDRServer", "Insert pass description here.");
+    FALCOR_PLUGIN_CLASS(FSDRServer, "FSDRServer", "Rendering agent send rendering result to Client via renderingserver.");
 
     static ref<FSDRServer> create(ref<Device> pDevice, const Properties& props) { return make_ref<FSDRServer>(pDevice, props); }
 
@@ -75,19 +52,20 @@ public:
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
 private:
-    int imageCount = 0;
-
-    ref<IScene> mpScene;
-    std::string mOutputDirectory;
-    void setOutputDirectory(std::string newOutputDir);
-
-    std::filesystem::path cameraInfoCSVFileLocation;
-    //std::unique_ptr<Buffer> getBufferByChannelName(std::string channelName);
-
+    RenderingServer* server;
+    // 不需要发送下一帧，因为还没有收到请求。一旦收到请求，之后就都需要发送了。
     bool needSendNextFrame = false;
+    ref<IScene> mpScene;
+    // 一些帮助函数和方法
 
-    Rect rtMaskParams = {0, 0, 0, 0};
-    
+    static float3 JsonToFloat3(const nlohmann::json& arr); // 将json数组转换为float3
+
+    // 序列化的格式为：{"width": int, "height": int, "channels": int, "bytesPerPixel": int}
+    static nlohmann::json SerializeTextureInfoToJson(ref<Texture> pTex); // 将texture的信息序列化为json格式。
+    static std::vector<uint8_t> ExtractSimpleTextureDataToBinary(ref<Texture> pTex); // 将texture的数据序列化为二进制格式。
+
+    // 反序列化的格式为：{"camera": {"position"?: [int, int, int], "upvector"?: [int, int, int], "target"?: [int, int, int] }}
+    void UpdateSceneFromJson(const nlohmann::json& sceneParam); // 根据json格式的场景参数更新场景。
 
 protected:
 };

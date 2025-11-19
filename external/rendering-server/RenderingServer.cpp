@@ -70,7 +70,7 @@ void RenderingServer::BindTestSafeMutex()
         "/safe_mutex/lock",
         [this](const httplib::Request& req, httplib::Response& res)
         {
-            this->renderMutex.lock();
+            this->testMutex.lock();
             SendJSONDataResponse(res, 200, MakeResponse(true));
         }
     );
@@ -78,7 +78,7 @@ void RenderingServer::BindTestSafeMutex()
         "/safe_mutex/unlock",
         [this](const httplib::Request& req, httplib::Response& res)
         {
-            this->renderMutex.unlock();
+            this->testMutex.unlock();
             SendJSONDataResponse(res, 200, MakeResponse(true));
         }
     );
@@ -86,10 +86,16 @@ void RenderingServer::BindTestSafeMutex()
 
 RenderingServer::RenderingServer(std::string host, int port) : cropWindow{{"x", 0}, {"y", 0}, {"width", 100}, {"height", 100}}
 {
-    renderMutex.lock(); // 一开始锁住，等有渲染请求时再解锁。
+    testMutex.lock();
+    // 两个渲染相关的锁必须锁定才能阻塞
+    renderingRequestSyncMutex.lock();
+    renderingCompleteSyncMutex.lock();
+
     BindServerHello();
     BindSetCropWindow();
     BindTestSafeMutex();
+    BindRenderingHandler();
+    BindGetRenderingResultData();
 
     // server listen on thread
     server.bind_to_port(host, port);
